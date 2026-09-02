@@ -26,24 +26,16 @@ import com.oslab.cpuscheduler.ui.components.*
 @Composable
 fun ComparisonScreen(
     processes: List<ProcessInput>,
+    selectedAlgorithms: Set<SchedulingAlgorithm>,
+    onAlgorithmsChanged: (Set<SchedulingAlgorithm>) -> Unit,
+    timeQuantumText: String,
+    onTimeQuantumChanged: (String) -> Unit,
     onAddProcess: (ProcessInput) -> Unit,
     onDeleteProcess: (Int) -> Unit,
     onLoadPreset: (String) -> Unit,
     onClearAll: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedAlgorithms by remember {
-        mutableStateOf(
-            setOf(
-                SchedulingAlgorithm.FCFS,
-                SchedulingAlgorithm.SJF,
-                SchedulingAlgorithm.SRTF,
-                SchedulingAlgorithm.ROUND_ROBIN
-            )
-        )
-    }
-
-    var timeQuantumText by remember { mutableStateOf("2") }
     val timeQuantum = timeQuantumText.toIntOrNull()?.coerceAtLeast(1) ?: 2
 
     val results = remember(selectedAlgorithms, processes, timeQuantum) {
@@ -94,11 +86,12 @@ fun ComparisonScreen(
                     FilterChip(
                         selected = isSelected,
                         onClick = {
-                            selectedAlgorithms = if (isSelected) {
+                            val newSet = if (isSelected) {
                                 if (selectedAlgorithms.size > 1) selectedAlgorithms - algo else selectedAlgorithms
                             } else {
                                 selectedAlgorithms + algo
                             }
+                            onAlgorithmsChanged(newSet)
                         },
                         label = { Text(algo.shortName, fontWeight = FontWeight.SemiBold) },
                         colors = FilterChipDefaults.filterChipColors(
@@ -121,7 +114,7 @@ fun ComparisonScreen(
                     OutlinedTextField(
                         value = timeQuantumText,
                         onValueChange = {
-                            timeQuantumText = it.filter { c -> c.isDigit() }
+                            onTimeQuantumChanged(it.filter { c -> c.isDigit() })
                         },
                         modifier = Modifier.width(100.dp),
                         singleLine = true
@@ -136,10 +129,7 @@ fun ComparisonScreen(
             showPriority = selectedAlgorithms.any { it.requiresPriority },
             onAddProcess = onAddProcess,
             onDeleteProcess = onDeleteProcess,
-            onLoadPreset = { presetType ->
-                onLoadPreset(presetType)
-                timeQuantumText = "${kotlin.random.Random.nextInt(1, 6)}"
-            },
+            onLoadPreset = onLoadPreset,
             onClearAll = onClearAll
         )
 

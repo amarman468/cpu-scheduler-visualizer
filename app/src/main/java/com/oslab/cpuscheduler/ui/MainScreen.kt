@@ -7,22 +7,34 @@ import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oslab.cpuscheduler.domain.model.ProcessInput
+import com.oslab.cpuscheduler.domain.model.SchedulingAlgorithm
 import com.oslab.cpuscheduler.ui.screens.ComparisonScreen
 import com.oslab.cpuscheduler.ui.screens.VisualizationScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
 
-    // Shared Process List state across screens
-    var processes by remember {
-        mutableStateOf<List<ProcessInput>>(emptyList())
+    // Shared State elevated to MainScreen to retain changes across tab navigation
+    var processes by remember { mutableStateOf<List<ProcessInput>>(emptyList()) }
+    var timeQuantumText by remember { mutableStateOf("2") }
+    var selectedAlgorithm by remember { mutableStateOf(SchedulingAlgorithm.FCFS) }
+    var selectedComparisonAlgorithms by remember {
+        mutableStateOf(
+            setOf(
+                SchedulingAlgorithm.FCFS,
+                SchedulingAlgorithm.SJF,
+                SchedulingAlgorithm.SRTF,
+                SchedulingAlgorithm.ROUND_ROBIN
+            )
+        )
     }
 
     val handleAddProcess: (ProcessInput) -> Unit = { newProc ->
@@ -39,6 +51,7 @@ fun MainScreen() {
 
     val handleLoadPreset: (String) -> Unit = { _ ->
         processes = ProcessInput.generateRandomProcesses()
+        timeQuantumText = "${kotlin.random.Random.nextInt(1, 6)}"
     }
 
     Scaffold(
@@ -102,22 +115,35 @@ fun MainScreen() {
                 )
             }
 
-            // Screen Content
-            when (selectedTab) {
-                0 -> VisualizationScreen(
-                    processes = processes,
-                    onAddProcess = handleAddProcess,
-                    onDeleteProcess = handleDeleteProcess,
-                    onLoadPreset = handleLoadPreset,
-                    onClearAll = handleClearAll
-                )
-                1 -> ComparisonScreen(
-                    processes = processes,
-                    onAddProcess = handleAddProcess,
-                    onDeleteProcess = handleDeleteProcess,
-                    onLoadPreset = handleLoadPreset,
-                    onClearAll = handleClearAll
-                )
+            // Screen Content (Retains State & UI across tab switches)
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (selectedTab == 0) {
+                    VisualizationScreen(
+                        processes = processes,
+                        selectedAlgorithm = selectedAlgorithm,
+                        onAlgorithmSelected = { selectedAlgorithm = it },
+                        timeQuantumText = timeQuantumText,
+                        onTimeQuantumChanged = { timeQuantumText = it },
+                        onAddProcess = handleAddProcess,
+                        onDeleteProcess = handleDeleteProcess,
+                        onLoadPreset = handleLoadPreset,
+                        onClearAll = handleClearAll
+                    )
+                }
+
+                if (selectedTab == 1) {
+                    ComparisonScreen(
+                        processes = processes,
+                        selectedAlgorithms = selectedComparisonAlgorithms,
+                        onAlgorithmsChanged = { selectedComparisonAlgorithms = it },
+                        timeQuantumText = timeQuantumText,
+                        onTimeQuantumChanged = { timeQuantumText = it },
+                        onAddProcess = handleAddProcess,
+                        onDeleteProcess = handleDeleteProcess,
+                        onLoadPreset = handleLoadPreset,
+                        onClearAll = handleClearAll
+                    )
+                }
             }
         }
     }

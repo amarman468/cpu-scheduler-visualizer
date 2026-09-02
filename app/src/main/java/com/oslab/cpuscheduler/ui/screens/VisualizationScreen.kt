@@ -29,14 +29,16 @@ import kotlinx.coroutines.delay
 @Composable
 fun VisualizationScreen(
     processes: List<ProcessInput>,
+    selectedAlgorithm: SchedulingAlgorithm,
+    onAlgorithmSelected: (SchedulingAlgorithm) -> Unit,
+    timeQuantumText: String,
+    onTimeQuantumChanged: (String) -> Unit,
     onAddProcess: (ProcessInput) -> Unit,
     onDeleteProcess: (Int) -> Unit,
     onLoadPreset: (String) -> Unit,
     onClearAll: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedAlgorithm by remember { mutableStateOf(SchedulingAlgorithm.FCFS) }
-    var timeQuantumText by remember { mutableStateOf("2") }
     val timeQuantum = timeQuantumText.toIntOrNull()?.coerceAtLeast(1) ?: 2
 
     // Playback state
@@ -98,7 +100,7 @@ fun VisualizationScreen(
                     FilterChip(
                         selected = selectedAlgorithm == algo,
                         onClick = {
-                            selectedAlgorithm = algo
+                            onAlgorithmSelected(algo)
                             playbackStep = 0
                             isPlaying = false
                         },
@@ -127,7 +129,7 @@ fun VisualizationScreen(
                     OutlinedTextField(
                         value = timeQuantumText,
                         onValueChange = {
-                            timeQuantumText = it.filter { c -> c.isDigit() }
+                            onTimeQuantumChanged(it.filter { c -> c.isDigit() })
                         },
                         modifier = Modifier.width(100.dp),
                         singleLine = true
@@ -142,10 +144,7 @@ fun VisualizationScreen(
             showPriority = selectedAlgorithm.requiresPriority,
             onAddProcess = onAddProcess,
             onDeleteProcess = onDeleteProcess,
-            onLoadPreset = { presetType ->
-                onLoadPreset(presetType)
-                timeQuantumText = "${kotlin.random.Random.nextInt(1, 6)}"
-            },
+            onLoadPreset = onLoadPreset,
             onClearAll = onClearAll
         )
 
