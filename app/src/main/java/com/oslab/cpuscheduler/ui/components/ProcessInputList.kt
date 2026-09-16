@@ -30,6 +30,7 @@ fun ProcessInputSection(
     processes: List<ProcessInput>,
     showPriority: Boolean,
     onAddProcess: (ProcessInput) -> Unit,
+    onUpdateProcess: (ProcessInput) -> Unit = {},
     onDeleteProcess: (Int) -> Unit,
     onLoadPreset: (String) -> Unit,
     onClearAll: () -> Unit,
@@ -37,7 +38,7 @@ fun ProcessInputSection(
 ) {
     var arrivalTimeText by remember { mutableStateOf("0") }
     var burstTimeText by remember { mutableStateOf("0") }
-    var priorityText by remember { mutableStateOf("1") }
+    var priorityText by remember { mutableStateOf("0") }
 
     Column(
         modifier = modifier
@@ -59,21 +60,33 @@ fun ProcessInputSection(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { onLoadPreset("standard") }) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Preset Sample", fontSize = 12.sp)
-                }
-                IconButton(onClick = onClearAll) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Clear All",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            IconButton(onClick = onClearAll) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "Clear All",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Preset options row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AssistChip(
+                onClick = { onLoadPreset("idle") },
+                label = { Text("Preset (With Idle Gap)", fontSize = 11.sp) },
+                leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp)) }
+            )
+            AssistChip(
+                onClick = { onLoadPreset("random") },
+                label = { Text("Random Continuous", fontSize = 11.sp) },
+                leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp)) }
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -138,9 +151,9 @@ fun ProcessInputSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Process list chips/items
+        // Process list chips/items with direct editing
         Text(
-            text = "Active Processes (${processes.size})",
+            text = "Active Processes (${processes.size}) - Edit AT/BT directly below",
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -155,18 +168,22 @@ fun ProcessInputSection(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 processes.forEach { proc ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
                             val color = try {
                                 Color(android.graphics.Color.parseColor(proc.colorHex))
                             } catch (e: Exception) {
@@ -178,25 +195,57 @@ fun ProcessInputSection(
                                     .clip(CircleShape)
                                     .background(color)
                             )
-                            Spacer(Modifier.width(8.dp))
                             Text(
                                 text = proc.name,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
-                            Spacer(Modifier.width(16.dp))
-                            Text("AT: ${proc.arrivalTime}", fontSize = 12.sp)
-                            Spacer(Modifier.width(12.dp))
-                            Text("BT: ${proc.burstTime}", fontSize = 12.sp)
+
+                            OutlinedTextField(
+                                value = "${proc.arrivalTime}",
+                                onValueChange = { input ->
+                                    val digits = input.filter { it.isDigit() }
+                                    val newAt = digits.toIntOrNull() ?: 0
+                                    onUpdateProcess(proc.copy(arrivalTime = newAt))
+                                },
+                                label = { Text("AT", fontSize = 9.sp) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.width(68.dp),
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = "${proc.burstTime}",
+                                onValueChange = { input ->
+                                    val digits = input.filter { it.isDigit() }
+                                    val newBt = digits.toIntOrNull() ?: 1
+                                    onUpdateProcess(proc.copy(burstTime = maxOf(1, newBt)))
+                                },
+                                label = { Text("BT", fontSize = 9.sp) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.width(68.dp),
+                                singleLine = true
+                            )
+
                             if (showPriority) {
-                                Spacer(Modifier.width(12.dp))
-                                Text("Priority: ${proc.priority}", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                OutlinedTextField(
+                                    value = "${proc.priority}",
+                                    onValueChange = { input ->
+                                        val digits = input.filter { it.isDigit() }
+                                        val newPri = digits.toIntOrNull() ?: 1
+                                        onUpdateProcess(proc.copy(priority = maxOf(1, newPri)))
+                                    },
+                                    label = { Text("Pri", fontSize = 9.sp) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.width(60.dp),
+                                    singleLine = true
+                                )
                             }
                         }
 
                         IconButton(
                             onClick = { onDeleteProcess(proc.id) },
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
                                 Icons.Default.Delete,

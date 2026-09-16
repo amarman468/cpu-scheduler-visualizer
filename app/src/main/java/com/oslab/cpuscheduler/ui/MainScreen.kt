@@ -23,7 +23,7 @@ fun MainScreen() {
     var selectedTab by rememberSaveable { mutableStateOf(0) }
 
     // Shared State elevated to MainScreen to retain changes across tab navigation
-    var processes by remember { mutableStateOf<List<ProcessInput>>(emptyList()) }
+    var processes by remember { mutableStateOf<List<ProcessInput>>(ProcessInput.generateIdleTimePreset()) }
     var timeQuantumText by remember { mutableStateOf("2") }
     var selectedAlgorithm by remember { mutableStateOf(SchedulingAlgorithm.FCFS) }
     var selectedComparisonAlgorithms by remember {
@@ -41,6 +41,10 @@ fun MainScreen() {
         processes = processes + newProc
     }
 
+    val handleUpdateProcess: (ProcessInput) -> Unit = { updatedProc ->
+        processes = processes.map { if (it.id == updatedProc.id) updatedProc else it }
+    }
+
     val handleDeleteProcess: (Int) -> Unit = { idToDelete ->
         processes = processes.filter { it.id != idToDelete }
     }
@@ -49,8 +53,12 @@ fun MainScreen() {
         processes = emptyList()
     }
 
-    val handleLoadPreset: (String) -> Unit = { _ ->
-        processes = ProcessInput.generateRandomProcesses()
+    val handleLoadPreset: (String) -> Unit = { presetType ->
+        processes = if (presetType == "idle") {
+            ProcessInput.generateIdleTimePreset()
+        } else {
+            ProcessInput.generateRandomProcesses()
+        }
         timeQuantumText = "${kotlin.random.Random.nextInt(1, 6)}"
     }
 
@@ -125,6 +133,7 @@ fun MainScreen() {
                         timeQuantumText = timeQuantumText,
                         onTimeQuantumChanged = { timeQuantumText = it },
                         onAddProcess = handleAddProcess,
+                        onUpdateProcess = handleUpdateProcess,
                         onDeleteProcess = handleDeleteProcess,
                         onLoadPreset = handleLoadPreset,
                         onClearAll = handleClearAll
@@ -139,6 +148,7 @@ fun MainScreen() {
                         timeQuantumText = timeQuantumText,
                         onTimeQuantumChanged = { timeQuantumText = it },
                         onAddProcess = handleAddProcess,
+                        onUpdateProcess = handleUpdateProcess,
                         onDeleteProcess = handleDeleteProcess,
                         onLoadPreset = handleLoadPreset,
                         onClearAll = handleClearAll

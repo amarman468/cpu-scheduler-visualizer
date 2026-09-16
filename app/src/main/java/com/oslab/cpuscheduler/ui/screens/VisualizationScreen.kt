@@ -34,6 +34,7 @@ fun VisualizationScreen(
     timeQuantumText: String,
     onTimeQuantumChanged: (String) -> Unit,
     onAddProcess: (ProcessInput) -> Unit,
+    onUpdateProcess: (ProcessInput) -> Unit = {},
     onDeleteProcess: (Int) -> Unit,
     onLoadPreset: (String) -> Unit,
     onClearAll: () -> Unit,
@@ -143,6 +144,7 @@ fun VisualizationScreen(
             processes = processes,
             showPriority = selectedAlgorithm.requiresPriority,
             onAddProcess = onAddProcess,
+            onUpdateProcess = onUpdateProcess,
             onDeleteProcess = onDeleteProcess,
             onLoadPreset = onLoadPreset,
             onClearAll = onClearAll

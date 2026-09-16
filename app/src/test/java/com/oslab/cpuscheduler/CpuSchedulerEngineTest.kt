@@ -124,7 +124,7 @@ class CpuSchedulerEngineTest {
 
         assertEquals(2, result.totalIdleTime)
         assertEquals(5, result.totalExecutionTime)
-        assertEquals(1, result.ganttBlocks.size) // 1 idle + 1 process block = idle block plus process block
+        assertEquals(2, result.ganttBlocks.size) // 1 idle + 1 process block = idle block plus process block
         assertTrue(result.ganttBlocks.any { it.isIdle && it.duration == 2 })
     }
 }

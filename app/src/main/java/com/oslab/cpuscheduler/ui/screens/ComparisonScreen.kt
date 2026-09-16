@@ -31,6 +31,7 @@ fun ComparisonScreen(
     timeQuantumText: String,
     onTimeQuantumChanged: (String) -> Unit,
     onAddProcess: (ProcessInput) -> Unit,
+    onUpdateProcess: (ProcessInput) -> Unit = {},
     onDeleteProcess: (Int) -> Unit,
     onLoadPreset: (String) -> Unit,
     onClearAll: () -> Unit,
@@ -128,6 +129,7 @@ fun ComparisonScreen(
             processes = processes,
             showPriority = selectedAlgorithms.any { it.requiresPriority },
             onAddProcess = onAddProcess,
+            onUpdateProcess = onUpdateProcess,
             onDeleteProcess = onDeleteProcess,
             onLoadPreset = onLoadPreset,
             onClearAll = onClearAll
