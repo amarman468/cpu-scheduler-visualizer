@@ -51,6 +51,12 @@ fun VisualizationScreen(
         CpuSchedulerEngine.solve(selectedAlgorithm, processes, timeQuantum)
     }
 
+    // Reset playback when inputs change
+    LaunchedEffect(selectedAlgorithm, processes, timeQuantum) {
+        playbackStep = 0
+        isPlaying = false
+    }
+
     val maxTime = result.totalExecutionTime
 
     // Playback coroutine loop
@@ -97,7 +103,7 @@ fun VisualizationScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SchedulingAlgorithm.values().forEach { algo ->
+                SchedulingAlgorithm.entries.forEach { algo ->
                     FilterChip(
                         selected = selectedAlgorithm == algo,
                         onClick = {

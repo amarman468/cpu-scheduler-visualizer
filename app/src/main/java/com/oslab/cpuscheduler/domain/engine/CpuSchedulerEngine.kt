@@ -28,10 +28,20 @@ object CpuSchedulerEngine {
 
         return when (algorithm) {
             SchedulingAlgorithm.FCFS -> solveFCFS(processes)
-            SchedulingAlgorithm.SJF -> solveSJF(processes)
-            SchedulingAlgorithm.SRTF -> solveSRTF(processes)
-            SchedulingAlgorithm.PRIORITY_NP -> solvePriorityNonPreemptive(processes)
-            SchedulingAlgorithm.PRIORITY_P -> solvePriorityPreemptive(processes)
+            SchedulingAlgorithm.SJF -> solveNonPreemptive(
+                processes, algorithm,
+                compareBy({ it.burstTime }, { it.arrivalTime }, { it.id })
+            )
+            SchedulingAlgorithm.SRTF -> solvePreemptive(
+                processes, algorithm
+            ) { rt -> compareBy({ rt.getValue(it.id) }, { it.arrivalTime }, { it.id }) }
+            SchedulingAlgorithm.PRIORITY_NP -> solveNonPreemptive(
+                processes, algorithm,
+                compareBy({ it.priority }, { it.arrivalTime }, { it.id })
+            )
+            SchedulingAlgorithm.PRIORITY_P -> solvePreemptive(
+                processes, algorithm
+            ) { _ -> compareBy({ it.priority }, { it.arrivalTime }, { it.id }) }
             SchedulingAlgorithm.ROUND_ROBIN -> solveRoundRobin(processes, maxOf(1, timeQuantum))
         }
     }
@@ -86,8 +96,12 @@ object CpuSchedulerEngine {
         return buildResult(SchedulingAlgorithm.FCFS, 0, processes, results, ganttBlocks)
     }
 
-    // 2. Shortest Job First (SJF Non-Preemptive)
-    private fun solveSJF(processes: List<ProcessInput>): AlgorithmResult {
+    // Unified Non-Preemptive Solver (SJF, Priority NP)
+    private fun solveNonPreemptive(
+        processes: List<ProcessInput>,
+        algorithm: SchedulingAlgorithm,
+        comparator: Comparator<ProcessInput>
+    ): AlgorithmResult {
         val uncompleted = processes.toMutableList()
         var currentTime = 0
         val ganttBlocks = mutableListOf<GanttBlock>()
@@ -110,9 +124,7 @@ object CpuSchedulerEngine {
                 continue
             }
 
-            val nextProc = ready.minWithOrNull(
-                compareBy({ it.burstTime }, { it.arrivalTime }, { it.id })
-            )!!
+            val nextProc = ready.minWithOrNull(comparator)!!
 
             uncompleted.remove(nextProc)
             val startTime = currentTime
@@ -142,11 +154,15 @@ object CpuSchedulerEngine {
             )
         }
 
-        return buildResult(SchedulingAlgorithm.SJF, 0, processes, results, ganttBlocks)
+        return buildResult(algorithm, 0, processes, results, ganttBlocks)
     }
 
-    // 3. Shortest Remaining Time First (SRTF Preemptive)
-    private fun solveSRTF(processes: List<ProcessInput>): AlgorithmResult {
+    // Unified Preemptive Solver (SRTF, Priority P)
+    private fun solvePreemptive(
+        processes: List<ProcessInput>,
+        algorithm: SchedulingAlgorithm,
+        comparatorFactory: (Map<Int, Int>) -> Comparator<ProcessInput>
+    ): AlgorithmResult {
         val remainingTime = processes.associate { it.id to it.burstTime }.toMutableMap()
         val completionTimes = mutableMapOf<Int, Int>()
         var currentTime = 0
@@ -165,9 +181,7 @@ object CpuSchedulerEngine {
                 continue
             }
 
-            val currentProc = ready.minWithOrNull(
-                compareBy({ remainingTime.getValue(it.id) }, { it.arrivalTime }, { it.id })
-            )!!
+            val currentProc = ready.minWithOrNull(comparatorFactory(remainingTime))!!
 
             timeline.add(currentTime to currentProc)
             remainingTime[currentProc.id] = remainingTime.getValue(currentProc.id) - 1
@@ -187,114 +201,10 @@ object CpuSchedulerEngine {
             ProcessResult(proc, ct, tat, wt)
         }
 
-        return buildResult(SchedulingAlgorithm.SRTF, 0, processes, results, ganttBlocks)
+        return buildResult(algorithm, 0, processes, results, ganttBlocks)
     }
 
-    // 4. Priority Scheduling (Non-Preemptive)
-    private fun solvePriorityNonPreemptive(processes: List<ProcessInput>): AlgorithmResult {
-        val uncompleted = processes.toMutableList()
-        var currentTime = 0
-        val ganttBlocks = mutableListOf<GanttBlock>()
-        val results = mutableListOf<ProcessResult>()
-
-        while (uncompleted.isNotEmpty()) {
-            val ready = uncompleted.filter { it.arrivalTime <= currentTime }
-            if (ready.isEmpty()) {
-                val nextArrival = uncompleted.minOf { it.arrivalTime }
-                ganttBlocks.add(
-                    GanttBlock(
-                        processId = null,
-                        processName = "Idle",
-                        startTime = currentTime,
-                        endTime = nextArrival,
-                        isIdle = true
-                    )
-                )
-                currentTime = nextArrival
-                continue
-            }
-
-            val nextProc = ready.minWithOrNull(
-                compareBy({ it.priority }, { it.arrivalTime }, { it.id })
-            )!!
-
-            uncompleted.remove(nextProc)
-            val startTime = currentTime
-            currentTime += nextProc.burstTime
-            val completionTime = currentTime
-            val turnaroundTime = completionTime - nextProc.arrivalTime
-            val waitingTime = turnaroundTime - nextProc.burstTime
-
-            ganttBlocks.add(
-                GanttBlock(
-                    processId = nextProc.id,
-                    processName = nextProc.name,
-                    startTime = startTime,
-                    endTime = completionTime,
-                    isIdle = false,
-                    colorHex = nextProc.colorHex
-                )
-            )
-
-            results.add(
-                ProcessResult(
-                    process = nextProc,
-                    completionTime = completionTime,
-                    turnaroundTime = turnaroundTime,
-                    waitingTime = waitingTime
-                )
-            )
-        }
-
-        return buildResult(SchedulingAlgorithm.PRIORITY_NP, 0, processes, results, ganttBlocks)
-    }
-
-    // 5. Priority Scheduling (Preemptive)
-    private fun solvePriorityPreemptive(processes: List<ProcessInput>): AlgorithmResult {
-        val remainingTime = processes.associate { it.id to it.burstTime }.toMutableMap()
-        val completionTimes = mutableMapOf<Int, Int>()
-        var currentTime = 0
-        val totalProcesses = processes.size
-        var completedCount = 0
-
-        val timeline = mutableListOf<Pair<Int, ProcessInput?>>()
-
-        val maxTimeLimit = processes.sumOf { it.burstTime } + processes.maxOf { it.arrivalTime } + 100
-
-        while (completedCount < totalProcesses && currentTime < maxTimeLimit) {
-            val ready = processes.filter { it.arrivalTime <= currentTime && remainingTime.getValue(it.id) > 0 }
-            if (ready.isEmpty()) {
-                timeline.add(currentTime to null)
-                currentTime++
-                continue
-            }
-
-            val currentProc = ready.minWithOrNull(
-                compareBy({ it.priority }, { it.arrivalTime }, { it.id })
-            )!!
-
-            timeline.add(currentTime to currentProc)
-            remainingTime[currentProc.id] = remainingTime.getValue(currentProc.id) - 1
-            currentTime++
-
-            if (remainingTime.getValue(currentProc.id) == 0) {
-                completedCount++
-                completionTimes[currentProc.id] = currentTime
-            }
-        }
-
-        val ganttBlocks = mergeTimelineToGantt(timeline)
-        val results = processes.map { proc ->
-            val ct = completionTimes.getValue(proc.id)
-            val tat = ct - proc.arrivalTime
-            val wt = tat - proc.burstTime
-            ProcessResult(proc, ct, tat, wt)
-        }
-
-        return buildResult(SchedulingAlgorithm.PRIORITY_P, 0, processes, results, ganttBlocks)
-    }
-
-    // 6. Round Robin (RR)
+    // Round Robin (RR)
     private fun solveRoundRobin(
         processes: List<ProcessInput>,
         timeQuantum: Int
@@ -310,6 +220,7 @@ object CpuSchedulerEngine {
         var currentTime = 0
         var completedCount = 0
         val totalProcesses = processes.size
+        val maxTimeLimit = processes.sumOf { it.burstTime } + processes.maxOf { it.arrivalTime } + 100
 
         fun checkAndEnqueue(time: Int) {
             for (proc in sortedByArrival) {
@@ -322,7 +233,7 @@ object CpuSchedulerEngine {
 
         checkAndEnqueue(currentTime)
 
-        while (completedCount < totalProcesses) {
+        while (completedCount < totalProcesses && currentTime < maxTimeLimit) {
             if (readyQueue.isEmpty()) {
                 val uncompleted = processes.filter { remainingTime.getValue(it.id) > 0 }
                 if (uncompleted.isEmpty()) break

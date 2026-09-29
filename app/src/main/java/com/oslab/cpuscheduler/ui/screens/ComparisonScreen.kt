@@ -82,7 +82,7 @@ fun ComparisonScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SchedulingAlgorithm.values().forEach { algo ->
+                SchedulingAlgorithm.entries.forEach { algo ->
                     val isSelected = selectedAlgorithms.contains(algo)
                     FilterChip(
                         selected = isSelected,
@@ -161,7 +161,7 @@ fun ComparisonScreen(
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = "Lowest Avg Waiting Time: ${bestAlgorithm.averageWaitingTime} ms | CPU Utilization: ${bestAlgorithm.cpuUtilization}%",
+                            text = "Lowest Avg Waiting Time: ${bestAlgorithm.averageWaitingTime} | CPU Utilization: ${bestAlgorithm.cpuUtilization}%",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -225,9 +225,9 @@ fun ComparisonScreen(
                             fontSize = 13.sp,
                             modifier = Modifier.weight(1.2f)
                         )
-                        Text("${res.averageWaitingTime} ms", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(0.9f))
-                        Text("${res.averageTurnaroundTime} ms", fontSize = 13.sp, modifier = Modifier.weight(0.9f))
-                        Text("${res.totalIdleTime} ms", fontSize = 13.sp, modifier = Modifier.weight(0.9f))
+                        Text("${res.averageWaitingTime}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(0.9f))
+                        Text("${res.averageTurnaroundTime}", fontSize = 13.sp, modifier = Modifier.weight(0.9f))
+                        Text("${res.totalIdleTime}", fontSize = 13.sp, modifier = Modifier.weight(0.9f))
                         Text("${res.cpuUtilization}%", fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.9f))
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

@@ -43,7 +43,7 @@ fun SummaryMetricsView(
         ) {
             MetricCard(
                 title = "Avg Waiting Time",
-                value = "${result.averageWaitingTime} ms",
+                value = "${result.averageWaitingTime}",
                 icon = Icons.Default.HourglassBottom,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
@@ -51,7 +51,7 @@ fun SummaryMetricsView(
 
             MetricCard(
                 title = "Avg Turnaround",
-                value = "${result.averageTurnaroundTime} ms",
+                value = "${result.averageTurnaroundTime}",
                 icon = Icons.Default.Schedule,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
@@ -66,7 +66,7 @@ fun SummaryMetricsView(
         ) {
             MetricCard(
                 title = "Total Idle Time",
-                value = "${result.totalIdleTime} ms",
+                value = "${result.totalIdleTime}",
                 icon = Icons.Default.Memory,
                 color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.weight(1f)

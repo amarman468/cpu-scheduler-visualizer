@@ -106,14 +106,15 @@ fun BarChartComparisonView(
                         size = Size(singleBarWidth, tatHeight)
                     )
 
-                    // Baseline
-                    drawLine(
-                        color = Color.Gray.copy(alpha = 0.3f),
-                        start = Offset(0f, height - 20f),
-                        end = Offset(width, height - 20f),
-                        strokeWidth = 2f
-                    )
                 }
+
+                // Baseline
+                drawLine(
+                    color = Color.Gray.copy(alpha = 0.3f),
+                    start = Offset(0f, height - 20f),
+                    end = Offset(width, height - 20f),
+                    strokeWidth = 2f
+                )
             }
         }
 
